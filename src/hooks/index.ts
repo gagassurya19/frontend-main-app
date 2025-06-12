@@ -18,4 +18,8 @@ export { useProfile } from './useProfile';
 export { useModal } from './useModal';
 
 // Type exports
-export type { SnapResult } from './useSnapResult'; 
+export type { SnapResult } from './useSnapResult';
+
+// New hooks
+export { useHistory } from './useHistory';
+export { useHistoryDetail } from './useHistoryDetail'; 

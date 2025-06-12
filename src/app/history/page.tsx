@@ -1,98 +1,47 @@
 'use client'
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MenuBar } from '@/components/menu-bar';
 import { MenuBarTop } from '@/components/menu-bar-top';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Utensils, 
   Clock, 
-  Calendar, 
-  ArrowLeft, 
   Search, 
-  Filter,
-  ChevronDown,
   Flame,
-  Eye
+  Eye,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
-import { DailyFood } from '@/types/dashboard';
-import { dailyFoodHistory } from '@/constants/dashboard-data';
+import { useHistory } from '@/hooks/useHistory';
+import { HistoryLoadingSkeleton, HistoryEmptyState, HistoryPageLoading } from '@/components/history/history-loading';
 import { ProtectedPageContent } from '@/components/auth/ProtectedPage';
 
 export default function HistoryPage() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedTimeFilter, setSelectedTimeFilter] = useState('all');
-  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
-  // Get unique categories
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set(dailyFoodHistory.map(food => food.category)));
-    return ['all', ...cats];
-  }, []);
-
-  // Filter food history
-  const filteredHistory = useMemo(() => {
-    return dailyFoodHistory.filter(food => {
-      const matchesSearch = food.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || food.category === selectedCategory;
-      
-      // Time filter implementation
-      let matchesTimeFilter = true;
-      if (selectedTimeFilter !== 'all') {
-        const foodDate = new Date(food.date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time to start of day
-        
-        switch (selectedTimeFilter) {
-          case 'today':
-            const todayStr = today.toISOString().split('T')[0];
-            matchesTimeFilter = food.date === todayStr;
-            break;
-            
-          case 'week':
-            const oneWeekAgo = new Date(today);
-            oneWeekAgo.setDate(today.getDate() - 7);
-            matchesTimeFilter = foodDate >= oneWeekAgo;
-            break;
-            
-          case 'month':
-            const oneMonthAgo = new Date(today);
-            oneMonthAgo.setMonth(today.getMonth() - 1);
-            matchesTimeFilter = foodDate >= oneMonthAgo;
-            break;
-            
-          default:
-            matchesTimeFilter = true;
-        }
-      }
-      
-      return matchesSearch && matchesCategory && matchesTimeFilter;
-    });
-  }, [searchQuery, selectedCategory, selectedTimeFilter]);
-
-  // Group food history by date
-  const groupedHistory = useMemo(() => {
-    const groups: Record<string, typeof filteredHistory> = {};
-    
-    filteredHistory.forEach(food => {
-      if (!groups[food.date]) {
-        groups[food.date] = [];
-      }
-      groups[food.date].push(food);
-    });
-
-    // Sort dates in descending order (newest first)
-    const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
-    
-    return sortedDates.map(date => ({
-      date,
-      foods: groups[date].sort((a, b) => a.time.localeCompare(b.time)) // Sort by time within each day
-    }));
-  }, [filteredHistory]);
+  const {
+    histories,
+    filteredCount,
+    totalCalories,
+    categories,
+    loading,
+    error,
+    isEmpty,
+    searchQuery,
+    selectedCategory,
+    selectedTimeFilter,
+    setSearchQuery,
+    setSelectedCategory,
+    setSelectedTimeFilter,
+    refreshHistory,
+    hasActiveFilters,
+    canLoadMore,
+    loadMore,
+  } = useHistory();
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -115,140 +64,217 @@ export default function HistoryPage() {
     });
   };
 
-  const handleImageError = (foodId: number) => {
+  const handleImageError = (foodId: string) => {
     setImageErrors(prev => ({ ...prev, [foodId]: true }));
   };
 
-  const handleFoodClick = (food: DailyFood) => {
-    router.push(`/history/${food.id}`);
+  const handleFoodClick = (foodId: string) => {
+    router.push(`/history/${foodId}`);
   };
-
-  const totalCalories = filteredHistory.reduce((sum, food) => sum + food.calories, 0);
 
   const handleTimeFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newValue = e.target.value;
-    setSelectedTimeFilter(newValue);
+    setSelectedTimeFilter(e.target.value);
   };
 
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSelectedTimeFilter('all');
+  };
+
+  const hasImageError = (foodId: string): boolean => {
+    return Boolean(imageErrors[foodId]);
+  };
+
+  // Initial loading state - use the full page loading component
+  if (loading && isEmpty) {
+    return (
+      <ProtectedPageContent>
+        <MenuBarTop />
+        <div className="min-h-screen bg-background pt-16 pb-20">
+          <div className="max-w-md mx-auto px-4">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-foreground mb-2">History Makanan</h1>
+              <p className="text-sm text-muted-foreground">Riwayat makanan yang telah di-scan</p>
+            </div>
+            <HistoryPageLoading />
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <MenuBar />
+        </div>
+      </ProtectedPageContent>
+    );
+  }
+
+  // Error State
+  if (error && !loading) {
+    return (
+      <ProtectedPageContent>
+        <MenuBarTop />
+        <div className="min-h-screen bg-background pt-16 pb-20">
+          <div className="max-w-md mx-auto px-4">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-foreground mb-2">History Makanan</h1>
+              <p className="text-sm text-muted-foreground">Riwayat makanan yang telah di-scan</p>
+            </div>
+
+            <Card className="p-8 text-center border-red-200 bg-red-50">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="font-medium text-lg mb-2 text-red-800">Terjadi Kesalahan</h3>
+              <p className="text-red-600 text-sm mb-4">{error}</p>
+              <Button onClick={refreshHistory} className="bg-red-600 hover:bg-red-700">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Coba Lagi
+              </Button>
+            </Card>
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <MenuBar />
+        </div>
+      </ProtectedPageContent>
+    );
+  }
+
   return (
-    <>
     <ProtectedPageContent>
       <MenuBarTop />
       <div className="min-h-screen bg-background pt-16 pb-20">
         <div className="max-w-md mx-auto px-4">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-2xl font-bold text-foreground">History Makanan</h1>
                 <p className="text-sm text-muted-foreground">Riwayat makanan yang telah di-scan</p>
               </div>
+              {!loading && (
+                <Button
+                  onClick={refreshHistory}
+                  variant="outline"
+                  size="sm"
+                  className="p-2"
+                  title="Refresh"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              )}
             </div>
 
             {/* Summary Card */}
-            <Card className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-amber-700">Total Makanan</p>
-                    <p className="text-2xl font-bold text-amber-800">{filteredHistory.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-amber-700">Total Kalori</p>
-                    <p className="text-2xl font-bold text-amber-800">{totalCalories}</p>
-                  </div>
-                  <div className="w-12 h-12 rounded-full bg-amber-200 flex items-center justify-center">
-                    <Utensils className="w-6 h-6 text-amber-700" />
-                  </div>
-                </div>
-                
-                {/* Active Filter Indicator */}
-                {(selectedTimeFilter !== 'all' || selectedCategory !== 'all' || searchQuery) && (
-                  <div className="mt-3 pt-3 border-t border-amber-200">
-                    <p className="text-xs text-amber-600 mb-1">Filter aktif:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedTimeFilter !== 'all' && (
-                        <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-full text-xs">
-                          {selectedTimeFilter === 'today' ? 'Hari Ini' : 
-                           selectedTimeFilter === 'week' ? 'Minggu Ini' : 
-                           selectedTimeFilter === 'month' ? 'Bulan Ini' : selectedTimeFilter}
-                        </span>
-                      )}
-                      {selectedCategory !== 'all' && (
-                        <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-full text-xs">
-                          {selectedCategory}
-                        </span>
-                      )}
-                      {searchQuery && (
-                        <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-full text-xs">
-                          "{searchQuery}"
-                        </span>
-                      )}
+            {!isEmpty && (
+              <Card className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-amber-700">Total Makanan</p>
+                      <p className="text-2xl font-bold text-amber-800">{filteredCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-amber-700">Total Kalori</p>
+                      <p className="text-2xl font-bold text-amber-800">{totalCalories}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-amber-200 flex items-center justify-center">
+                      <Utensils className="w-6 h-6 text-amber-700" />
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  
+                  {/* Active Filter Indicator */}
+                  {hasActiveFilters && (
+                    <div className="mt-3 pt-3 border-t border-amber-200">
+                      <p className="text-xs text-amber-600 mb-1">Filter aktif:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedTimeFilter !== 'all' && (
+                          <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-full text-xs">
+                            {selectedTimeFilter === 'today' ? 'Hari Ini' : 
+                             selectedTimeFilter === 'week' ? 'Minggu Ini' : 
+                             selectedTimeFilter === 'month' ? 'Bulan Ini' : selectedTimeFilter}
+                          </span>
+                        )}
+                        {selectedCategory !== 'all' && (
+                          <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-full text-xs">
+                            {selectedCategory}
+                          </span>
+                        )}
+                        {searchQuery && (
+                          <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-full text-xs">
+                            "{searchQuery}"
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Search and Filters */}
-          <div className="mb-6 space-y-3">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Cari makanan..."
-                value={searchQuery}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-border/40 rounded-md bg-background text-sm focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            {/* Filters */}
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <select
-                  value={selectedCategory}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-border/40 rounded-md bg-background text-sm focus:border-amber-400 focus:outline-none"
-                >
-                  {categories.map(category => (
-                    <option key={category} value={category}>
-                      {category === 'all' ? 'Semua Kategori' : category}
-                    </option>
-                  ))}
-                </select>
+          {!isEmpty && (
+            <div className="mb-6 space-y-3">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Cari makanan..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-border/40 rounded-md bg-background text-sm focus:border-amber-400 focus:outline-none"
+                />
               </div>
-                             <div className="flex-1">
-                 <select
-                   value={selectedTimeFilter}
-                   onChange={handleTimeFilterChange}
-                   className="w-full px-3 py-2 border border-border/40 rounded-md bg-background text-sm focus:border-amber-400 focus:outline-none"
-                 >
-                  <option value="all">Semua Waktu</option>
-                  <option value="today">Hari Ini</option>
-                  <option value="week">Minggu Ini</option>
-                  <option value="month">Bulan Ini</option>
-                </select>
-              </div>
-            </div>
-          </div>
 
-          {/* Food History List */}
-          <div className="space-y-6">
-            {groupedHistory.length === 0 ? (
-              <Card className="p-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                  <Utensils className="w-8 h-8 text-muted-foreground" />
+              {/* Filters */}
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-border/40 rounded-md bg-background text-sm focus:border-amber-400 focus:outline-none"
+                  >
+                    {categories.map(category => (
+                      <option key={category} value={category}>
+                        {category === 'all' ? 'Semua Kategori' : category}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <h3 className="font-medium text-lg mb-2">Tidak ada makanan ditemukan</h3>
-                <p className="text-muted-foreground text-sm">
-                  Coba ubah filter pencarian atau scan makanan baru
-                </p>
-              </Card>
-            ) : (
-              groupedHistory.map((group, groupIndex) => {
+                <div className="flex-1">
+                  <select
+                    value={selectedTimeFilter}
+                    onChange={handleTimeFilterChange}
+                    className="w-full px-3 py-2 border border-border/40 rounded-md bg-background text-sm focus:border-amber-400 focus:outline-none"
+                  >
+                    <option value="all">Semua Waktu</option>
+                    <option value="today">Hari Ini</option>
+                    <option value="week">Minggu Ini</option>
+                    <option value="month">Bulan Ini</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Content */}
+          {loading && !isEmpty ? (
+            <HistoryLoadingSkeleton />
+          ) : isEmpty ? (
+            <HistoryEmptyState 
+              hasFilters={hasActiveFilters}
+              onReset={resetFilters}
+            />
+          ) : filteredCount === 0 ? (
+            <HistoryEmptyState 
+              hasFilters={hasActiveFilters}
+              onReset={resetFilters}
+            />
+          ) : (
+            /* Food History List */
+            <div className="space-y-6">
+              {histories.map((group, groupIndex) => {
                 const dayCalories = group.foods.reduce((sum, food) => sum + food.calories, 0);
                 
                 return (
@@ -281,13 +307,13 @@ export default function HistoryPage() {
                         <Card 
                           key={food.id} 
                           className="hover:shadow-md transition-all duration-200 cursor-pointer border-border/40 hover:border-amber-200"
-                          onClick={() => handleFoodClick(food)}
+                          onClick={() => handleFoodClick(food.id)}
                         >
                           <CardContent className="p-4">
                             <div className="flex items-center space-x-3">
                               {/* Food Image */}
                               <div className="w-16 h-16 rounded-lg flex-shrink-0">
-                                {imageErrors[food.id] ? (
+                                {hasImageError(food.id) ? (
                                   <div className="w-full h-full bg-amber-100 rounded-lg flex items-center justify-center">
                                     <Utensils className="w-8 h-8 text-amber-600" />
                                   </div>
@@ -309,7 +335,7 @@ export default function HistoryPage() {
                                   <div>
                                     <h4 className="font-semibold text-base text-foreground truncate">{food.name}</h4>
                                     <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                      {food.description || 'Makanan lezat dengan bahan-bahan pilihan'}
+                                      {food.description}
                                     </p>
                                   </div>
                                   <div className="flex items-center gap-1 ml-2">
@@ -341,9 +367,22 @@ export default function HistoryPage() {
                     </div>
                   </div>
                 );
-              })
-            )}
-          </div>
+              })}
+
+              {/* Load More Button */}
+              {canLoadMore && (
+                <div className="text-center py-4">
+                  <Button 
+                    onClick={loadMore}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Muat Lebih Banyak
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Bottom spacing for menu bar */}
           <div className="h-20" />
@@ -354,6 +393,5 @@ export default function HistoryPage() {
         <MenuBar />
       </div>
     </ProtectedPageContent>
-    </>
   );
 }

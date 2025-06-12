@@ -14,4 +14,5 @@ export interface RecipeRecommendationsProps {
   showNavButtons: boolean;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
   onScrollToRecipe: (direction: 'left' | 'right') => void;
+  onImageClick: (imageData: { url: string; alt: string }) => void;
 } 

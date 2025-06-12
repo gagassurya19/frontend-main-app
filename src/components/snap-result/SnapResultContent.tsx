@@ -111,6 +111,7 @@ export function SnapResultContent() {
               showNavButtons={showNavButtons}
               scrollContainerRef={scrollContainerRef}
               onScrollToRecipe={scrollToRecipe}
+              onImageClick={(imageData) => setSelectedImage(imageData)}
             />
           </div>
           

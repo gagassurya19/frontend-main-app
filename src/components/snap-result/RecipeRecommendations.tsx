@@ -1,5 +1,5 @@
-import React from 'react';
-import { Clock, Users, Star, ChefHat, Utensils, Timer, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, Users, Star, ChefHat, Utensils, Timer, AlertTriangle, CheckCircle, XCircle, ImageIcon, Eye } from 'lucide-react';
 import { SnapResult, RecipeRecommendationsProps } from '@/types';
 
 export function RecipeRecommendations({
@@ -8,7 +8,13 @@ export function RecipeRecommendations({
   showNavButtons,
   scrollContainerRef,
   onScrollToRecipe,
+  onImageClick,
 }: RecipeRecommendationsProps) {
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+  const handleImageError = (imageKey: string) => {
+    setImageErrors(prev => ({ ...prev, [imageKey]: true }));
+  };
 
   const formatTime = (minutes: number) => {
     if (minutes < 60) return `${minutes} menit`;
@@ -82,19 +88,38 @@ export function RecipeRecommendations({
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Recipe Image */}
-              {recipe.mainImage && (
-                <div className="relative h-48 w-full overflow-hidden">
-                  <img
-                    src={recipe.mainImage}
-                    alt={recipe.title}
-                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                  />
-                  <div className="absolute top-3 right-3 bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                    <Star className="w-3 h-3" />
-                    Rekomendasi #{index + 1}
+              <div className="relative h-72 w-full overflow-hidden group cursor-pointer" 
+                   onClick={() => recipe.mainImage && !imageErrors[`recipe-${index}`] && onImageClick({
+                     url: recipe.mainImage,
+                     alt: `${recipe.title} - Gambar Resep`
+                   })}>
+                {recipe.mainImage && !imageErrors[`recipe-${index}`] ? (
+                  <>
+                    <img
+                      src={recipe.mainImage}
+                      alt={recipe.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={() => handleImageError(`recipe-${index}`)}
+                    />
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-full p-3">
+                        <Eye className="w-6 h-6 text-amber-600" />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex flex-col items-center justify-center text-amber-600">
+                    <ImageIcon className="w-12 h-12 mb-2 opacity-50" />
+                    <p className="text-sm font-medium opacity-75">Gambar tidak tersedia</p>
+                    <p className="text-xs opacity-50 mt-1">Resep #{index + 1}</p>
                   </div>
+                )}
+                <div className="absolute top-3 right-3 bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                  <Star className="w-3 h-3" />
+                  Rekomendasi #{index + 1}
                 </div>
-              )}
+              </div>
 
               <div className="p-4">
                 {/* Recipe header */}
@@ -231,14 +256,39 @@ export function RecipeRecommendations({
                             </p>
                             {step.image && step.image.length > 0 && (
                               <div className="flex gap-2 overflow-x-auto pb-2">
-                                {step.image.map((imgUrl, imgIdx) => (
-                                  <img
-                                    key={imgIdx}
-                                    src={imgUrl}
-                                    alt={`Langkah ${idx + 1} - Gambar ${imgIdx + 1}`}
-                                    className="w-20 h-20 object-cover rounded-lg border border-amber-200 flex-shrink-0 hover:scale-105 transition-transform"
-                                  />
-                                ))}
+                                {step.image.map((imgUrl, imgIdx) => {
+                                  const stepImageKey = `step-${index}-${idx}-${imgIdx}`;
+                                  return (
+                                    <div key={imgIdx} className="flex-shrink-0 relative group">
+                                      {!imageErrors[stepImageKey] ? (
+                                        <div 
+                                          className="relative cursor-pointer"
+                                          onClick={() => onImageClick({
+                                            url: imgUrl,
+                                            alt: `${recipe.title} - Langkah ${idx + 1} Gambar ${imgIdx + 1}`
+                                          })}
+                                        >
+                                          <img
+                                            src={imgUrl}
+                                            alt={`Langkah ${idx + 1} - Gambar ${imgIdx + 1}`}
+                                            className="w-20 h-20 object-cover rounded-lg border border-amber-200 group-hover:scale-105 transition-transform"
+                                            onError={() => handleImageError(stepImageKey)}
+                                          />
+                                          {/* Hover overlay for step images */}
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 rounded-lg flex items-center justify-center">
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-full p-1.5">
+                                              <Eye className="w-3 h-3 text-amber-600" />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg border border-amber-200 flex items-center justify-center">
+                                          <ImageIcon className="w-6 h-6 text-amber-600 opacity-50" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

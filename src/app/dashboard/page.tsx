@@ -10,24 +10,37 @@ import { DailyCalorieCharts } from '@/components/dashboard/daily-calorie-charts'
 import { HorizontalSlider } from '@/components/dashboard/horizontal-slider';
 import { DailyFoodHistory } from '@/components/dashboard/daily-food-history';
 import { WeeklyCalorieBenchmark } from '@/components/dashboard/weekly-calorie-benchmark';
+import { DashboardLoading } from '@/components/dashboard/dashboard-loading';
+import { DashboardError } from '@/components/dashboard/dashboard-error';
 import { ProtectedPageContent } from '@/components/auth/ProtectedPage';
 import { DailyFood } from '@/types/dashboard';
+import { useDashboard } from '@/hooks/useDashboard';
 import {
-  weeklyData,
   foodData,
-  dailyFoodHistory,
   periods,
   slides
 } from '@/constants/dashboard-data';
-
-
 
 export default function Dashboard() {
   const router = useRouter();
   const [selectedPeriod, setSelectedPeriod] = React.useState('week');
   const [currentSlide, setCurrentSlide] = React.useState(0);
-  const [imageErrors, setImageErrors] = React.useState<Record<number, boolean>>({});
+  const [imageErrors, setImageErrors] = React.useState<Record<number | string, boolean>>({});
   const [hasTriggeredConfetti, setHasTriggeredConfetti] = React.useState(false);
+
+  // Use dashboard hook for API data
+  const { 
+    weeklyData,
+    dailyFoodHistory,
+    dailyFoodSummary,
+    loading, 
+    error, 
+    isEmpty,
+    dailyFoodLoading,
+    dailyFoodError,
+    refreshDashboard,
+    weeklyBenchmark
+  } = useDashboard();
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -37,7 +50,7 @@ export default function Dashboard() {
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   };
 
-  const handleImageError = (foodId: number) => {
+  const handleImageError = (foodId: number | string) => {
     setImageErrors(prev => ({ ...prev, [foodId]: true }));
   };
 
@@ -52,6 +65,37 @@ export default function Dashboard() {
   const handleFoodClick = (food: DailyFood) => {
     router.push(`/history/${food.id}`);
   };
+
+  // Loading State - show if either weekly data or daily food is loading
+  if (loading && dailyFoodLoading) {
+    return (
+      <ProtectedPageContent>
+        <MenuBarTop />
+        <div className="bg-background pt-16">
+          <DashboardLoading />
+        </div>
+        <div className="flex justify-center mt-36">
+          <MenuBar />
+        </div>
+      </ProtectedPageContent>
+    );
+  }
+
+  // Error State - prioritize weekly data error, then daily food error
+  const mainError = error || dailyFoodError;
+  if (mainError && loading) {
+    return (
+      <ProtectedPageContent>
+        <MenuBarTop />
+        <div className="bg-background pt-16">
+          <DashboardError error={mainError} onRetry={refreshDashboard} />
+        </div>
+        <div className="flex justify-center mt-36">
+          <MenuBar />
+        </div>
+      </ProtectedPageContent>
+    );
+  }
 
   return (
     <ProtectedPageContent>
@@ -76,17 +120,21 @@ export default function Dashboard() {
           
           <DailyFoodHistory
             dailyFoodHistory={dailyFoodHistory}
+            dailyFoodSummary={dailyFoodSummary}
             imageErrors={imageErrors}
             onImageError={handleImageError}
             onViewHistory={handleViewHistory}
             onFoodClick={handleFoodClick}
+            loading={dailyFoodLoading}
           />
           
-          <WeeklyCalorieBenchmark
-            weeklyData={weeklyData}
-            hasTriggeredConfetti={hasTriggeredConfetti}
-            onConfettiTriggered={handleConfettiTriggered}
-          />
+          {weeklyBenchmark && (
+            <WeeklyCalorieBenchmark
+              weeklyData={weeklyBenchmark}
+              hasTriggeredConfetti={hasTriggeredConfetti}
+              onConfettiTriggered={handleConfettiTriggered}
+            />
+          )}
         </div>
       </div>
       <div className="flex justify-center mt-36">

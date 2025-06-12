@@ -4,6 +4,48 @@ export interface DayData {
   day: string;
   calories: number;
   target: number;
+  date?: string;
+  isToday?: boolean;
+}
+
+// New interface specifically for weekly benchmark data
+export interface WeeklyBenchmarkDayData {
+  day: string;
+  totalCalories: number;
+  targetCalories: number;
+  percentage: number;
+  date: string;
+  isToday: boolean;
+}
+
+export interface WeeklyCaloriesResponse {
+  status: string;
+  data: {
+    weeklyData: DayData[];
+    weekSummary: {
+      totalCalories: number;
+      totalTarget: number;
+      achievementPercentage: number;
+      averageCalories: number;
+      achievedDays: number;
+    };
+  };
+}
+
+export interface DailyFoodSummary {
+  totalCalories: number;
+  targetCalories: number;
+  remainingCalories: number;
+  foodCount: number;
+  date: string;
+}
+
+export interface DailyFoodHistoryResponse {
+  status: string;
+  data: {
+    dailyFoodHistory: DailyFood[];
+    summary: DailyFoodSummary;
+  };
 }
 
 export interface FoodData {
@@ -12,7 +54,7 @@ export interface FoodData {
 }
 
 export interface DailyFood {
-  id: number;
+  id: number | string;
   name: string;
   calories: number;
   time: string;
@@ -50,3 +92,17 @@ export interface Slide {
   title: string;
   description: string;
 } 
+
+export interface WeeklyBenchmarkResponse {
+  status: string;
+  data: {
+    data: WeeklyBenchmarkDayData[];
+    summary: WeeklyBenchmarkSummary;
+  };
+}
+
+export interface WeeklyBenchmarkSummary {
+  totalCalories: number;
+  targetCalories: number;
+  achievement: number;
+}

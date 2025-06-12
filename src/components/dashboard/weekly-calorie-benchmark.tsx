@@ -2,10 +2,10 @@ import React from 'react';
 import confetti from 'canvas-confetti';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Activity } from 'lucide-react';
-import { DayData } from '@/types/dashboard';
+import { WeeklyBenchmarkResponse } from '@/types/dashboard';
 
 interface WeeklyCalorieBenchmarkProps {
-  weeklyData: DayData[];
+  weeklyData: WeeklyBenchmarkResponse['data'];
   hasTriggeredConfetti: boolean;
   onConfettiTriggered: () => void;
 }
@@ -15,11 +15,16 @@ export function WeeklyCalorieBenchmark({
   hasTriggeredConfetti, 
   onConfettiTriggered 
 }: WeeklyCalorieBenchmarkProps) {
-    const totalCalories = weeklyData.reduce((sum, day) => sum + day.calories, 0);
-    const totalTarget = weeklyData.reduce((sum, day) => sum + day.target, 0);
-    const achievementPercentage = Math.round((totalCalories / totalTarget) * 100);
-    const averageCalories = Math.round(totalCalories / weeklyData.length);
-    const achievedDays = weeklyData.filter(day => day.calories >= day.target * 0.8).length;
+    console.log(weeklyData.data);
+    // Use summary data from API if available, otherwise calculate from data
+    const totalCalories = weeklyData.summary?.totalCalories ?? 
+      (weeklyData.data.length > 0 ? weeklyData.data.reduce((sum, day) => sum + day.totalCalories, 0) : 0);
+    const totalTarget = weeklyData.summary?.targetCalories ?? 
+      (weeklyData.data.length > 0 ? weeklyData.data.reduce((sum, day) => sum + day.targetCalories, 0) : 0);
+    const achievementPercentage = weeklyData.summary?.achievement ?? 
+      (totalTarget > 0 ? Math.round((totalCalories / totalTarget) * 100) : 0);
+    const averageCalories = weeklyData.data.length > 0 ? Math.round(totalCalories / weeklyData.data.length) : 0;
+    const achievedDays = weeklyData.data.filter(day => day.totalCalories >= day.targetCalories * 0.8).length;
 
     // Confetti function
     const triggerConfetti = React.useCallback(() => {
@@ -168,9 +173,9 @@ export function WeeklyCalorieBenchmark({
           {/* Daily Progress Bars */}
           <div className="space-y-3">
             <h4 className="font-medium text-sm text-muted-foreground mb-3">Progress Harian</h4>
-            {weeklyData.map((day, index) => {
-              const percentage = Math.min((day.calories / day.target) * 100, 100);
-              const isToday = index === 4; // Thursday as example current day
+            {weeklyData.data.map((day, index) => {
+              const percentage = Math.min((day.totalCalories / day.targetCalories) * 100, 100);
+              const isToday = day.isToday;
 
               return (
                 <div key={day.day} className={`p-3 rounded-lg ${isToday ? 'bg-amber-50 border border-amber-200' : 'bg-muted/30'}`}>
@@ -182,8 +187,8 @@ export function WeeklyCalorieBenchmark({
                       {isToday && <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">Hari Ini</span>}
                     </div>
                     <div className="text-right">
-                      <span className="text-sm font-semibold">{day.calories}</span>
-                      <span className="text-xs text-muted-foreground">/{day.target} kcal</span>
+                      <span className="text-sm font-semibold">{day.totalCalories}</span>
+                      <span className="text-xs text-muted-foreground">/{day.targetCalories} kcal</span>
                     </div>
                   </div>
 

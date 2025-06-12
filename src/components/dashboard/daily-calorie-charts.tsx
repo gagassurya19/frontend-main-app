@@ -17,13 +17,9 @@ export function DailyCalorieCharts({ weeklyData }: DailyCalorieChartsProps) {
             const progress = Math.round((dayData.calories / dayData.target) * 100);
             const progressAngle = Math.min(progress, 100) * 2.7; // 270 degrees max
 
-            // Get current day
-            const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
-            const isToday = dayData.day === today;
-
             return (
               <div key={dayData.day} className="flex flex-col items-center relative">
-                {isToday && (
+                {dayData.isToday && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded-full">
                     Today
                   </div>
@@ -47,7 +43,7 @@ export function DailyCalorieCharts({ weeklyData }: DailyCalorieChartsProps) {
                         gridType="circle"
                         radialLines={false}
                         stroke="none"
-                        className={`first:fill-muted last:fill-background ${isToday ? 'first:fill-amber-100 last:fill-amber-50' : ''}`}
+                        className={`first:fill-muted last:fill-background ${dayData.isToday ? 'first:fill-amber-100 last:fill-amber-50' : ''}`}
                         polarRadius={[25, 20]}
                       />
                       <RadialBar
@@ -98,7 +94,7 @@ export function DailyCalorieCharts({ weeklyData }: DailyCalorieChartsProps) {
                     </RadialBarChart>
                   </ChartContainer>
                 </div>
-                <div className={`text-xs font-medium ${isToday ? 'text-amber-600 font-bold' : 'text-muted-foreground'}`}>
+                <div className={`text-xs font-medium ${dayData.isToday ? 'text-amber-600 font-bold' : 'text-muted-foreground'}`}>
                   {dayData.day}
                 </div>
               </div>

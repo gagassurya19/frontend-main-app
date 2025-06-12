@@ -1,14 +1,4 @@
-import { DayData, FoodData, DailyFood, HistoryData, PeriodData, Slide } from '@/types/dashboard';
-
-export const weeklyData: DayData[] = [
-  { day: "Sun", calories: 1850, target: 2000 },
-  { day: "Mon", calories: 1450, target: 2000 },
-  { day: "Tue", calories: 2100, target: 2000 },
-  { day: "Wed", calories: 1600, target: 2000 },
-  { day: "Thu", calories: 1940, target: 2000 },
-  { day: "Fri", calories: 2050, target: 2000 },
-  { day: "Sat", calories: 1750, target: 2000 },
-];
+import { FoodData, DailyFood, HistoryData, PeriodData, Slide } from '@/types/dashboard';
 
 export const chartConfig = {
   calories: {

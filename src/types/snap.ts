@@ -13,8 +13,5 @@ export interface RecipeRecommendationsProps {
   currentIndex: number;
   showNavButtons: boolean;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
-  showDetails: boolean;
-  onShowDetailsChange: (show: boolean) => void;
-  onRecipeSelect: (recipe: Recipe) => void;
   onScrollToRecipe: (direction: 'left' | 'right') => void;
 } 

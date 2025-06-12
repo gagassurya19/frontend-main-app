@@ -2,7 +2,7 @@
 
 import type * as React from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
-import { Home, ScanLine, Calculator, HistoryIcon } from "lucide-react"
+import { Home, ScanLine, Calculator, HistoryIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { ROUTES } from "@/constants"
@@ -11,6 +11,13 @@ interface MenuItem {
   icon: React.ReactNode
   label: string
   href: string
+}
+
+interface MenuBarProps {
+  // Recipe navigation props (optional - only for result page)
+  showRecipeNavButtons?: boolean;
+  hasMultipleRecipes?: boolean;
+  onScrollToRecipe?: (direction: 'left' | 'right') => void;
 }
 
 const menuItems: MenuItem[] = [
@@ -36,11 +43,16 @@ const menuItems: MenuItem[] = [
   }
 ]
 
-export function MenuBar() {
+export function MenuBar({ 
+  showRecipeNavButtons = false, 
+  hasMultipleRecipes = false,
+  onScrollToRecipe 
+}: MenuBarProps = {}) {
   const { scrollY } = useScroll()
   const pathname = usePathname()
   const y = useTransform(scrollY, [0, 100], [0, -20])
   const opacity = useTransform(scrollY, [0, 100], [1, 0.8])
+  const isResultPage = pathname === '/snap/result'
 
   return (
     <motion.div
@@ -52,6 +64,18 @@ export function MenuBar() {
         initial="initial"
       >
         <ul className="flex items-center gap-2 relative z-10">
+          {/* Recipe Navigation - Left Button */}
+          {isResultPage && showRecipeNavButtons && hasMultipleRecipes && onScrollToRecipe && (
+            <motion.li className="relative">
+              <button
+                onClick={() => onScrollToRecipe('left')}
+                className="flex items-center gap-2 px-3 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-all duration-300 hover:scale-105 hover:border-amber-300"
+              >
+                <ChevronLeft className="h-4 w-4 text-amber-600" />
+              </button>
+            </motion.li>
+          )}
+
           {menuItems.map((item) => {
             const isActive = pathname === item.href
             return (
@@ -72,6 +96,18 @@ export function MenuBar() {
               </motion.li>
             )
           })}
+
+          {/* Recipe Navigation - Right Button */}
+          {isResultPage && showRecipeNavButtons && hasMultipleRecipes && onScrollToRecipe && (
+            <motion.li className="relative">
+              <button
+                onClick={() => onScrollToRecipe('right')}
+                className="flex items-center gap-2 px-3 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-all duration-300 hover:scale-105 hover:border-amber-300"
+              >
+                <ChevronRight className="h-4 w-4 text-amber-600" />
+              </button>
+            </motion.li>
+          )}
         </ul>
       </motion.nav>
     </motion.div>

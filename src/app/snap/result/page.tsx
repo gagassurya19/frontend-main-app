@@ -15,84 +15,27 @@ import {
   LoadingState
 } from '@/components/snap-result';
 import { ProtectedPageContent } from '@/components/auth/ProtectedPage';
+import { Suspense } from 'react'
+import { SnapResultContent } from '@/components/snap-result'
 
 export default function SnapResultPage() {
-  const router = useRouter();
-  const { snapResult, isLoading } = useSnapResult();
-  const { currentIndex, showNavButtons, scrollContainerRef, scrollToRecipe } = useRecipeNavigation(snapResult);
-  
-  const [selectedImage, setSelectedImage] = useState<{ url: string; alt: string } | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-
-  const handleRecipeSelect = (recipe: Recipe) => {
-    // Store selected recipe in localStorage
-    localStorage.setItem(STORAGE_KEYS.SELECTED_RECIPE, JSON.stringify(recipe));
-    router.push(ROUTES.RECIPE_DETAIL);
-  };
-
-  const handleRetry = () => {
-    router.push(ROUTES.SNAP);
-  };
-
-  if (isLoading) {
-    return <LoadingState />;
-  }
-
-  if (!snapResult) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Data tidak ditemukan</h2>
-          <p className="text-muted-foreground mb-4">Silakan coba scan ulang</p>
-          <button 
-            onClick={handleRetry}
-            className="px-4 py-2 bg-primary text-white rounded-lg"
-          >
-            Kembali ke Scan
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <ProtectedPageContent>
-    <div className="min-h-screen bg-background">
-      <MenuBarTop />
-      
-      <div className="px-4 pt-6 pb-24">
-        <CapturedImagePreview 
-          imageUrl={snapResult.snaped}
-          onImageClick={(imageData) => setSelectedImage(imageData)}
-        />
-        
-        <DetectedMaterials 
-          materials={snapResult.material_detected}
-        />
-        
-        <RecipeRecommendations
-          snapResult={snapResult}
-          currentIndex={currentIndex}
-          showNavButtons={showNavButtons}
-          scrollContainerRef={scrollContainerRef}
-          showDetails={showDetails}
-          onShowDetailsChange={setShowDetails}
-          onRecipeSelect={handleRecipeSelect}
-          onScrollToRecipe={scrollToRecipe}
-        />
-        
-        <RetrySection onRetryDetection={handleRetry} />
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-amber-200/30 rounded-full blur-xl" />
+        <div className="absolute top-20 -left-8 w-32 h-32 bg-orange-200/20 rounded-full blur-xl" />
+        <div className="absolute bottom-20 right-8 w-28 h-28 bg-amber-300/25 rounded-full blur-xl" />
+        <div className="absolute bottom-40 left-4 w-20 h-20 bg-orange-300/20 rounded-full blur-xl" />
       </div>
-
-      <MenuBar />
       
-      <ImagePopup
-        isOpen={selectedImage !== null}
-        onClose={() => setSelectedImage(null)}
-        imageUrl={selectedImage?.url || ''}
-        alt={selectedImage?.alt || ''}
-      />
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
+        </div>
+      }>
+        <SnapResultContent />
+      </Suspense>
     </div>
-    </ProtectedPageContent>
-  );
+  )
 }

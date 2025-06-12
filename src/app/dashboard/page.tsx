@@ -15,11 +15,7 @@ import { DashboardError } from '@/components/dashboard/dashboard-error';
 import { ProtectedPageContent } from '@/components/auth/ProtectedPage';
 import { DailyFood } from '@/types/dashboard';
 import { useDashboard } from '@/hooks/useDashboard';
-import {
-  foodData,
-  periods,
-  slides
-} from '@/constants/dashboard-data';
+// HorizontalSlider now fetches its own data via API
 
 export default function Dashboard() {
   const router = useRouter();
@@ -43,11 +39,11 @@ export default function Dashboard() {
   } = useDashboard();
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
+    setCurrentSlide((prev) => (prev + 1) % 2); // 2 slides total
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    setCurrentSlide((prev) => (prev - 1 + 2) % 2); // 2 slides total
   };
 
   const handleImageError = (foodId: number | string) => {
@@ -107,9 +103,6 @@ export default function Dashboard() {
           <DailyCalorieCharts weeklyData={weeklyData} />
           
           <HorizontalSlider
-            foodData={foodData}
-            periods={periods}
-            slides={slides}
             currentSlide={currentSlide}
             selectedPeriod={selectedPeriod}
             onSlideChange={setCurrentSlide}

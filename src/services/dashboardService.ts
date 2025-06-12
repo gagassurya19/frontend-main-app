@@ -1,4 +1,4 @@
-import { WeeklyCaloriesResponse, DayData, DailyFoodHistoryResponse, DailyFood, DailyFoodSummary, WeeklyBenchmarkResponse } from '@/types/dashboard';
+import { WeeklyCaloriesResponse, DayData, DailyFoodHistoryResponse, DailyFood, DailyFoodSummary, WeeklyBenchmarkResponse, FoodData, PeriodData } from '@/types/dashboard';
 import { getAuthTokenFromCookie } from '@/utils/auth-cookies';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -134,6 +134,84 @@ export const dashboardService = {
       return result;
     } catch (error) {
       console.error('Error fetching weekly benchmark:', error);
+      throw error;
+    }
+  },
+
+  async getMostConsumedIngredients(): Promise<{
+    foodData: FoodData[];
+  }> {
+    const token = getAuthTokenFromCookie();
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const url = `${API_BASE_URL}/dashboard/most-consumed-ingredients`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      const result = await handleResponse<{
+        foodData: FoodData[];
+      }>(response);
+
+      return {
+        foodData: result.foodData,
+      };
+
+    } catch (error) {
+      console.error('Error fetching most consumed ingredients:', error);
+      
+      // Return fallback data for empty state instead of throwing error
+      if (error instanceof Error && error.message.includes('Data not found')) {
+        return {
+          foodData: [],
+        };
+      }
+      
+      throw error;
+    }
+  },
+
+  async getHistoryCalories(): Promise<{
+    periods: PeriodData[];
+  }> {
+    const token = getAuthTokenFromCookie();
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const url = `${API_BASE_URL}/dashboard/history-calories`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      const result = await handleResponse<{
+        periods: PeriodData[];
+      }>(response);
+
+      return {
+        periods: result.periods,
+      };
+
+    } catch (error) {
+      console.error('Error fetching history calories:', error);
+      
+      // Return fallback data for empty state instead of throwing error
+      if (error instanceof Error && error.message.includes('Data not found')) {
+        return {
+          periods: [],
+        };
+      }
+      
       throw error;
     }
   }

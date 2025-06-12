@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Clock, Users, Star, ChefHat, Utensils, Timer, AlertTriangle, CheckCircle, XCircle, ImageIcon, Eye } from 'lucide-react';
-import { SnapResult, RecipeRecommendationsProps } from '@/types';
+import { Clock, Users, Star, ChefHat, Utensils, Timer, AlertTriangle, CheckCircle, XCircle, ImageIcon, Eye, BookmarkPlus, Bookmark, Loader2 } from 'lucide-react';
+import { SnapResult, RecipeRecommendationsProps, CompleteApiResult } from '@/types';
+import { historyService, SaveRecipeHistoryRequest } from '@/services/historyService';
 
 export function RecipeRecommendations({
   snapResult,
+  completeApiResult,
   currentIndex,
   showNavButtons,
   scrollContainerRef,
@@ -11,9 +13,65 @@ export function RecipeRecommendations({
   onImageClick,
 }: RecipeRecommendationsProps) {
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [savedRecipes, setSavedRecipes] = useState<Record<number, boolean>>({});
+  const [savingRecipes, setSavingRecipes] = useState<Record<number, boolean>>({});
 
   const handleImageError = (imageKey: string) => {
     setImageErrors(prev => ({ ...prev, [imageKey]: true }));
+  };
+
+  const getMealCategory = (time: string) => {
+    const hour = parseInt(time.split(':')[0], 10);
+
+    if (hour >= 4 && hour < 10) return 'Sarapan';
+    if (hour >= 10 && hour < 15) return 'Makan Siang';
+    if (hour >= 15 && hour < 18) return 'Makan Sore';
+    return 'Makan Malam';
+  };
+
+  const handleSaveRecipe = async (recipe: any, index: number) => {
+    try {
+      setSavingRecipes(prev => ({ ...prev, [index]: true }));
+
+      // Get raw API data for this specific recipe
+      const apiRecipeData = completeApiResult?.data[index];
+      
+      const recipeData: SaveRecipeHistoryRequest = {
+        // Use actual receipt_id from API response (UUID format required)
+        receiptId: apiRecipeData?.receipt_id || '',
+        
+        // Convert detected labels to JSON string (as expected by SaveRecipeHistoryRequest)
+        detectedLabels: JSON.stringify(completeApiResult?.ingredients_detected || snapResult.material_detected || []),
+        
+        // Use captured image from complete API result or recipe image
+        photoUrl: completeApiResult?.capturedImage || recipe.mainImage || '',
+        
+        category: getMealCategory(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })),
+        notes: `Resep dipilih dari rekomendasi AI - ${recipe.title}${apiRecipeData?.similarity_score ? ` (Similarity: ${(apiRecipeData.similarity_score * 100).toFixed(1)}%)` : ''}`,
+        
+        // Convert ingredients arrays to JSON strings (as expected by SaveRecipeHistoryRequest)
+        bahanUtama: JSON.stringify(apiRecipeData?.bahan || recipe.usedMaterial || []),
+        bahanKurang: JSON.stringify(apiRecipeData?.bahan_tidak_terdeteksi || recipe.missingMaterial || []),
+      };
+
+      console.log('💾 Attempting to save recipe with corrected payload:', recipeData);
+
+      await historyService.saveRecipeHistory(recipeData);
+      
+      setSavedRecipes(prev => ({ ...prev, [index]: true }));
+      
+      // Optional: Show success message
+      console.log('✅ Recipe saved successfully!');
+      
+    } catch (error) {
+      console.error('❌ Failed to save recipe:', error);
+      
+      // Optional: Show error message to user
+      alert('Gagal menyimpan resep. Silakan coba lagi.');
+      
+    } finally {
+      setSavingRecipes(prev => ({ ...prev, [index]: false }));
+    }
   };
 
   const formatTime = (minutes: number) => {
@@ -69,8 +127,6 @@ export function RecipeRecommendations({
           {snapResult.receipts.length} resep ditemukan
         </div>
       </div>
-
-
 
       {/* Recipe cards container */}
       <div className="relative">
@@ -299,7 +355,7 @@ export function RecipeRecommendations({
                 )}
 
                 {/* Complete Nutrition & Timing Info */}
-                <div className="border-t border-amber-200 pt-4">
+                <div className="border-t border-amber-200 pt-4 mb-4">
                   <h5 className="font-medium text-amber-800 mb-2 text-sm">
                     Informasi Lengkap:
                   </h5>
@@ -327,6 +383,44 @@ export function RecipeRecommendations({
                       </span>
                     </div>
                   </div>
+                </div>
+
+                {/* Save Recipe Button */}
+                <div className="border-t border-amber-200 pt-4">
+                  <button
+                    onClick={() => handleSaveRecipe(recipe, index)}
+                    disabled={savingRecipes[index] || savedRecipes[index]}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300 ${
+                      savedRecipes[index]
+                        ? 'bg-green-100 text-green-700 border border-green-200 cursor-not-allowed'
+                        : savingRecipes[index]
+                        ? 'bg-amber-100 text-amber-600 border border-amber-200 cursor-not-allowed'
+                        : 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]'
+                    }`}
+                  >
+                    {savingRecipes[index] ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : savedRecipes[index] ? (
+                      <>
+                        <Bookmark className="w-4 h-4" />
+                        Tersimpan
+                      </>
+                    ) : (
+                      <>
+                        <BookmarkPlus className="w-4 h-4" />
+                        Simpan Resep
+                      </>
+                    )}
+                  </button>
+                  
+                  {savedRecipes[index] && (
+                    <p className="text-center text-green-600 text-xs mt-2 animate-fadeIn">
+                      ✅ Resep berhasil disimpan ke riwayat Anda
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

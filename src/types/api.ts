@@ -16,6 +16,7 @@ export interface ApiRecipe {
   lemak: number;
   metode_memasak: string[];
   protein: number;
+  receipt_id: string;
   similarity_score: number;
 }
 

@@ -18,7 +18,7 @@ import { ROUTES } from '@/constants';
 
 export function SnapResultContent() {
   const router = useRouter();
-  const { snapResult, isLoading } = useSnapResult();
+  const { snapResult, completeApiResult, isLoading } = useSnapResult();
   const { currentIndex, showNavButtons, scrollContainerRef, scrollToRecipe } = useRecipeNavigation(snapResult);
   
   const [selectedImage, setSelectedImage] = useState<{ url: string; alt: string } | null>(null);
@@ -39,7 +39,7 @@ export function SnapResultContent() {
             <div className="mb-6">
               <div className="w-20 h-20 mx-auto bg-amber-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
                 <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.15 0-4.2-.585-6.1-1.64l1.1-2.76A5 5 0 0012 13a5 5 0 004.9-2.4l1.1 2.76A7.96 7.96 0 0112 15z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.15 0-4.2-.585-6.1-1.64l1.1-2.76A5 5 0 0112 13a5 5 0 004.9-2.4l1.1 2.76A7.96 7.96 0 0112 15z" />
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-2">Data Tidak Ditemukan</h2>
@@ -107,6 +107,7 @@ export function SnapResultContent() {
             
             <RecipeRecommendations
               snapResult={snapResult}
+              completeApiResult={completeApiResult}
               currentIndex={currentIndex}
               showNavButtons={showNavButtons}
               scrollContainerRef={scrollContainerRef}

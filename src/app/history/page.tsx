@@ -86,6 +86,15 @@ export default function HistoryPage() {
     return Boolean(imageErrors[foodId]);
   };
 
+  const getMealCategory = (time: string) => {
+    const hour = parseInt(time.split(':')[0], 10);
+    
+    if (hour >= 4 && hour < 10) return 'Sarapan';
+    if (hour >= 10 && hour < 15) return 'Makan Siang';
+    if (hour >= 15 && hour < 18) return 'Makan Sore';
+    return 'Makan Malam';
+  };
+
   // Initial loading state - use the full page loading component
   if (loading && isEmpty) {
     return (
@@ -332,29 +341,29 @@ export default function HistoryPage() {
                               {/* Food Info */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between">
-                                  <div>
+                                  <div className="flex-1 min-w-0">
                                     <h4 className="font-semibold text-base text-foreground truncate">{food.name}</h4>
                                     <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                                       {food.description}
                                     </p>
                                   </div>
-                                  <div className="flex items-center gap-1 ml-2">
+                                  <div className="flex items-center gap-1 flex-shrink-0">
                                     <Flame className="w-4 h-4 text-amber-600" />
                                     <span className="text-sm font-semibold text-amber-600">{food.calories}</span>
                                   </div>
                                 </div>
                                 
                                 <div className="flex items-center justify-between mt-3">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                      <Clock className="w-3 h-3" />
-                                      {food.time}
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                                      <Clock className="w-3 h-3 flex-shrink-0" />
+                                      <span className="truncate">{food.time}</span>
                                     </div>
-                                    <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">
-                                      {food.category}
+                                    <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full whitespace-nowrap">
+                                      {getMealCategory(food.time)}
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                                  <div className="flex items-center gap-1 text-xs text-amber-600 flex-shrink-0 ml-2">
                                     <Eye className="w-3 h-3" />
                                     <span>Lihat Detail</span>
                                   </div>

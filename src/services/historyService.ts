@@ -9,6 +9,18 @@ import {
 } from '@/types/history';
 import { getAuthTokenFromCookie } from '@/utils/auth-cookies';
 
+// Types for saving recipe history
+export interface SaveRecipeHistoryRequest {
+  receiptId: string;
+  detectedLabels: string; // JSON string dari bahan-bahan hasil deteksi ML
+  photoUrl?: string; // captured photo stored in Supabase storage
+  category?: string; // contoh: "Sarapan", "Makan Siang", dst
+  notes?: string; // opsional: catatan user
+  bahanUtama: string; // JSON string: bahan cocok dengan resep
+  bahanKurang: string; // JSON string: bahan yang tidak tersedia
+}
+
+// API configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 // Safe JSON parse helper
@@ -206,6 +218,35 @@ export const historyService = {
 
     } catch (error) {
       console.error('Error fetching history detail:', error);
+      throw error;
+    }
+  },
+
+  async saveRecipeHistory(data: SaveRecipeHistoryRequest): Promise<any> {
+    const token = getAuthTokenFromCookie();
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const url = `${API_BASE_URL}/history`;
+
+    try {
+      console.log('🍽️ Saving recipe to history:', data);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      const result = await handleResponse<any>(response);
+      
+      console.log('✅ Recipe saved to history successfully:', result);
+      return result;
+
+    } catch (error) {
+      console.error('❌ Error saving recipe to history:', error);
       throw error;
     }
   }

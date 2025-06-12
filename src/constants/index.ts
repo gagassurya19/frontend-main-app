@@ -13,6 +13,7 @@ export const ROUTES = {
 // Storage keys
 export const STORAGE_KEYS = {
   LATEST_SNAP_RESULT: 'latest_snap_result',
+  LATEST_COMPLETE_API_RESULT: 'latest_complete_api_result',
   SELECTED_RECIPE: 'selected_recipe',
   BMI_HISTORY: 'bmi_history',
   USER_PROFILE: 'user_profile',

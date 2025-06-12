@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { ROUTES, DEFAULTS, STORAGE_KEYS } from '@/constants';
 import ApiService from '@/services/api';
 import { transformApiResponseToSnapResult } from '@/utils/transformers';
+import { CompleteApiResult } from '@/types';
 
 export const useCaptureProcess = (
   videoRef: React.RefObject<HTMLVideoElement>,
@@ -80,14 +81,22 @@ export const useCaptureProcess = (
         throw new Error('No recipes found for the detected ingredients. Please try with a different image.');
       }
       
-      console.log('🔄 Transforming API response...');
-      // Transform API response to SnapResult format
-      const snapResult = transformApiResponseToSnapResult(apiResponse, imageUrl);
-      console.log('✅ SnapResult transformed:', snapResult);
+      console.log('🔄 Preparing data for storage...');
       
-      // Store the result in localStorage
+      // Store the complete API response in localStorage
+      const completeResult: CompleteApiResult = {
+        ...apiResponse,
+        capturedImage: imageUrl,
+        timestamp: new Date().toISOString()
+      };
+      
+      localStorage.setItem(STORAGE_KEYS.LATEST_COMPLETE_API_RESULT, JSON.stringify(completeResult));
+      console.log('💾 Complete API response stored in localStorage');
+      
+      // Also transform for backward compatibility with existing components
+      const snapResult = transformApiResponseToSnapResult(apiResponse, imageUrl);
       localStorage.setItem(STORAGE_KEYS.LATEST_SNAP_RESULT, JSON.stringify(snapResult));
-      console.log('💾 Result stored in localStorage');
+      console.log('💾 Transformed result stored for component compatibility');
       
       // Navigate to results page
       console.log('🧭 Navigating to results page...');

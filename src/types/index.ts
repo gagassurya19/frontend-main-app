@@ -13,7 +13,11 @@ export type {
 } from './dashboard';
 
 // Snap related types
-export type { SnapResult, RecipeRecommendationsProps } from './snap';
+export type { 
+  SnapResult, 
+  RecipeRecommendationsProps, 
+  CompleteApiResult
+} from './snap';
 
 // BMI related types
 export type { 
